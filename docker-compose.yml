@@ -1,6 +1,24 @@
 services:
   db:
     image: postgres:16-alpine
+    command: >
+      postgres 
+      -c shared_preload_libraries=pg_stat_statements
+      -c track_activity_query_size=4096
+      -c track_io_timing=on
+      -c pg_stat_statements.track=ALL
+    labels:
+      com.datadoghq.ad.check_names: '["postgres"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [{
+          "dbm": true,
+          "host": "%%host%%",
+          "port": 5432,
+          "username": "datadog",
+          "password": "datadog",
+          "dbname": "memoapp"
+        }]
     environment:
       POSTGRES_DB: memoapp
       POSTGRES_USER: memo
