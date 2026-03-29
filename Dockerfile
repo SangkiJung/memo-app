@@ -8,6 +8,7 @@ RUN mvn -q -B package -DskipTests
 # Run
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
+RUN mkdir -p /app/logs && chmod 777 /app/logs
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 COPY --from=build /app/target/memo-app-*.jar app.jar

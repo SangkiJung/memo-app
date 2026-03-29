@@ -19,6 +19,8 @@ services:
     build: .
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs:/app/logs  # 로그 파일 저장 경로 
     environment:
       DB_HOST: db
       DB_PORT: 5432
