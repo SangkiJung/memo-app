@@ -13,7 +13,7 @@ services:
       com.datadoghq.ad.instances: |
         [{
           "dbm": true,
-          "host": "%%host%%",
+          "host": "db",
           "port": 5432,
           "username": "datadog",
           "password": "datadog",
