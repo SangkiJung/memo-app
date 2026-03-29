@@ -17,7 +17,8 @@ services:
           "port": 5432,
           "username": "datadog",
           "password": "datadog",
-          "dbname": "memoapp"
+          "dbname": "memoapp",
+          "collect_raw_query_statement": true
         }]
     environment:
       POSTGRES_DB: memoapp
