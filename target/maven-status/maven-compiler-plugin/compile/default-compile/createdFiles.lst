@@ -1,0 +1,9 @@
+com\example\memo\controller\MemoController.class
+com\example\memo\entity\ActionType.class
+com\example\memo\MemoApplication.class
+com\example\memo\repository\ActionLogRepository.class
+com\example\memo\entity\ActionLog.class
+com\example\memo\config\MemoSaveRequestBodyLoggingFilter.class
+com\example\memo\entity\Memo.class
+com\example\memo\service\MemoService.class
+com\example\memo\repository\MemoRepository.class

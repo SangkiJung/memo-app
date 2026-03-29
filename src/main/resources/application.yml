@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: memo-app
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:memoapp}
+    username: ${DB_USER:memo}
+    password: ${DB_PASSWORD:memo}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.example.memo: INFO

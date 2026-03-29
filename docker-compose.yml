@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: memoapp
+      POSTGRES_USER: memo
+      POSTGRES_PASSWORD: memo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memo -d memoapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: memoapp
+      DB_USER: memo
+      DB_PASSWORD: memo
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

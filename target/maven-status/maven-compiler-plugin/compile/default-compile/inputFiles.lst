@@ -1,0 +1,9 @@
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\entity\Memo.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\service\MemoService.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\MemoApplication.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\config\MemoSaveRequestBodyLoggingFilter.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\entity\ActionType.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\repository\MemoRepository.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\repository\ActionLogRepository.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\entity\ActionLog.java
+C:\Users\MZC01-SKJUNG\Documents\noteapp\src\main\java\com\example\memo\controller\MemoController.java
