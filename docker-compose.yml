@@ -18,7 +18,9 @@ services:
           "username": "datadog",
           "password": "datadog",
           "dbname": "memoapp",
-          "collect_raw_query_statement": true
+          "collect_raw_query_statement": {
+            "enabled": true
+          }
         }]
     environment:
       POSTGRES_DB: memoapp
