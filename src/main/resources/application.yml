@@ -22,3 +22,5 @@ logging:
   level:
     root: INFO
     com.example.memo: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
