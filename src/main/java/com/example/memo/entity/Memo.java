@@ -1,5 +1,6 @@
 package com.example.memo.entity;
 
+import com.example.memo.support.WeatherDisplayHelper;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -26,8 +27,9 @@ public class Memo {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    /** 도시명 (WeatherAPI location.name) */
-    private String location;
+    /** 도시명 — DB 컬럼명은 {@code location} (예약어·Thymeleaf 혼동 방지를 위해 필드명만 cityName) */
+    @Column(name = "location")
+    private String cityName;
 
     @Column(name = "weather_condition")
     private String weatherCondition;
@@ -38,12 +40,12 @@ public class Memo {
     protected Memo() {
     }
 
-    public Memo(String title, String content, Instant createdAt, String location,
+    public Memo(String title, String content, Instant createdAt, String cityName,
                 String weatherCondition, Double tempC) {
         this.title = title;
         this.content = content;
         this.createdAt = createdAt;
-        this.location = location;
+        this.cityName = cityName;
         this.weatherCondition = weatherCondition;
         this.tempC = tempC;
     }
@@ -64,8 +66,8 @@ public class Memo {
         return createdAt;
     }
 
-    public String getLocation() {
-        return location;
+    public String getCityName() {
+        return cityName;
     }
 
     public String getWeatherCondition() {
@@ -74,5 +76,16 @@ public class Memo {
 
     public Double getTempC() {
         return tempC;
+    }
+
+    /** Thymeleaf에서 SpEL 빈({@code @weatherDisplay}) 없이 이모지 표시용 */
+    public String getWeatherEmoji() {
+        return WeatherDisplayHelper.emojiForConditionStatic(weatherCondition);
+    }
+
+    public boolean hasWeatherOrLocationInfo() {
+        return (cityName != null && !cityName.isBlank())
+                || (weatherCondition != null && !weatherCondition.isBlank())
+                || tempC != null;
     }
 }

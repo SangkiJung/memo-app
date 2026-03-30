@@ -49,7 +49,7 @@ public class MemoService {
             log.warn("날씨 API 처리 중 예외 — 메모는 저장합니다: {}", e.getMessage());
         }
 
-        String location = snap.hasAny() ? snap.location() : null;
+        String cityName = snap.hasAny() ? snap.location() : null;
         String weatherCondition = snap.weatherCondition();
         Double tempC = snap.tempC();
 
@@ -57,7 +57,7 @@ public class MemoService {
                 title,
                 content != null ? content : "",
                 now,
-                location,
+                cityName,
                 weatherCondition,
                 tempC
         );

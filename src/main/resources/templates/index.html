@@ -107,23 +107,26 @@
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div class="flex-grow-1">
                                     <h2 class="h6 mb-1" th:text="${memo.title}">제목</h2>
-                                    <div class="memo-ctx text-muted mb-2 d-flex flex-wrap align-items-center gap-2"
-                                         th:if="${memo.location != null || memo.weatherCondition != null || memo.tempC != null}">
-                                        <span th:if="${memo.location != null}"
-                                              class="badge rounded-pill bg-light text-dark border border-secondary-subtle">
-                                            📍 <span th:text="${memo.location}">서울</span>
-                                        </span>
-                                        <span class="text-secondary"
-                                              th:if="${memo.location != null && (memo.weatherCondition != null || memo.tempC != null)}">|</span>
-                                        <span th:if="${memo.weatherCondition != null || memo.tempC != null}"
-                                              class="badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm">
-                                            <span th:if="${memo.weatherCondition != null}"
-                                                  th:text="${@weatherDisplay.emojiForCondition(memo.weatherCondition)}">☀️</span>
-                                            <span th:if="${memo.weatherCondition == null && memo.tempC != null}">🌤️</span>
-                                            <span th:if="${memo.weatherCondition != null}"
-                                                  th:text="${' ' + memo.weatherCondition}"> 맑음</span>
-                                            <span th:if="${memo.tempC != null}"
-                                                  th:text="${' ' + #numbers.formatDecimal(memo.tempC, 1, 1) + '°C'}"> 25°C</span>
+                                    <div class="memo-ctx mb-2 d-flex flex-wrap align-items-center gap-2">
+                                        <th:block th:if="${memo.hasWeatherOrLocationInfo()}">
+                                            <span th:if="${memo.cityName != null}"
+                                                  class="badge rounded-pill bg-light text-dark border border-secondary-subtle">
+                                                📍 <span th:text="${memo.cityName}">서울</span>
+                                            </span>
+                                            <span class="text-secondary"
+                                                  th:if="${memo.cityName != null && (memo.weatherCondition != null || memo.tempC != null)}">|</span>
+                                            <span th:if="${memo.weatherCondition != null || memo.tempC != null}"
+                                                  class="badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm">
+                                                <span th:text="${memo.weatherEmoji}">☀️</span>
+                                                <span th:if="${memo.weatherCondition != null}"
+                                                      th:text="${' ' + memo.weatherCondition}"> 맑음</span>
+                                                <span th:if="${memo.tempC != null}"
+                                                      th:text="${' ' + #numbers.formatDecimal(memo.tempC, 1, 1) + '°C'}"> 25°C</span>
+                                            </span>
+                                        </th:block>
+                                        <span th:unless="${memo.hasWeatherOrLocationInfo()}"
+                                              class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">
+                                            위치·날씨 정보 없음 · <span class="small">WEATHER_API_KEY 설정 후 새 메모를 저장해 보세요</span>
                                         </span>
                                     </div>
                                     <p class="small text-muted mb-1"

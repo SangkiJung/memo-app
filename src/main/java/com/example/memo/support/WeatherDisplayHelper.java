@@ -6,6 +6,10 @@ import org.springframework.stereotype.Component;
 public class WeatherDisplayHelper {
 
     public String emojiForCondition(String conditionText) {
+        return emojiForConditionStatic(conditionText);
+    }
+
+    public static String emojiForConditionStatic(String conditionText) {
         if (conditionText == null || conditionText.isBlank()) {
             return "🌤️";
         }
