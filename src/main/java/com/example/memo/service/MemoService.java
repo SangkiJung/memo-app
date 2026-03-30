@@ -27,6 +27,18 @@ public class MemoService {
         return memoRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /**
+     * {@code query}가 비어 있으면 전체 목록, 아니면 제목 또는 내용에 부분 일치(대소문자 무시)하는 메모만 반환합니다.
+     */
+    @Transactional(readOnly = true)
+    public List<Memo> findMemosForList(String query) {
+        if (query == null || query.isBlank()) {
+            return memoRepository.findAllByOrderByCreatedAtDesc();
+        }
+        String q = query.trim();
+        return memoRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrderByCreatedAtDesc(q, q);
+    }
+
     @Transactional(readOnly = true)
     public List<ActionLog> findAllLogs() {
         return actionLogRepository.findAllByOrderByTimestampDesc();

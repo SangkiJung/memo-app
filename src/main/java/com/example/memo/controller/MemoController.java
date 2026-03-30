@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.ui.Model;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 
 @Controller
@@ -20,9 +22,14 @@ public class MemoController {
     }
 
     @GetMapping("/")
-    public String index(Model model) {
+    public String index(Model model, @RequestParam(name = "q", required = false) String q) {
+        String raw = q != null ? q : "";
+        String memoQuery = raw.strip();
+        boolean memoSearchActive = !memoQuery.isEmpty();
+        model.addAttribute("memoQuery", memoQuery);
+        model.addAttribute("memoSearchActive", memoSearchActive);
         model.addAttribute("zone", ZoneId.systemDefault());
-        model.addAttribute("memos", memoService.findAllMemos());
+        model.addAttribute("memos", memoService.findMemosForList(raw));
         model.addAttribute("logs", memoService.findAllLogs());
         return "index";
     }
@@ -32,9 +39,10 @@ public class MemoController {
                          @RequestParam(required = false, defaultValue = "") String content,
                          @RequestParam(required = false) String memoCity,
                          @RequestParam(required = false) String memoWeatherCondition,
-                         @RequestParam(required = false) String memoTempC) {
+                         @RequestParam(required = false) String memoTempC,
+                         @RequestParam(name = "returnQ", required = false) String returnQ) {
         if (title == null || title.isBlank()) {
-            return "redirect:/";
+            return redirectToIndex(returnQ);
         }
         memoService.createMemo(
                 title.trim(),
@@ -43,7 +51,7 @@ public class MemoController {
                 blankToNull(memoWeatherCondition),
                 parseDoubleNullable(memoTempC)
         );
-        return "redirect:/";
+        return redirectToIndex(returnQ);
     }
 
     private static String blankToNull(String s) {
@@ -65,11 +73,19 @@ public class MemoController {
     }
 
     @PostMapping("/memos/{id}/delete")
-    public String delete(@PathVariable Long id) {
+    public String delete(@PathVariable Long id,
+                         @RequestParam(name = "returnQ", required = false) String returnQ) {
         try {
             memoService.deleteMemo(id);
         } catch (IllegalArgumentException ignored) {
         }
-        return "redirect:/";
+        return redirectToIndex(returnQ);
+    }
+
+    private static String redirectToIndex(String q) {
+        if (q == null || q.isBlank()) {
+            return "redirect:/";
+        }
+        return "redirect:/?q=" + UriUtils.encodeQueryParam(q.trim(), StandardCharsets.UTF_8);
     }
 }

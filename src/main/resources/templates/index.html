@@ -68,6 +68,10 @@
             border-color: rgba(45, 106, 79, 0.2) !important;
             background: linear-gradient(135deg, rgba(216, 243, 220, 0.35) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
         }
+        .memo-search .form-control:focus {
+            border-color: var(--memo-accent);
+            box-shadow: 0 0 0 0.2rem rgba(45, 106, 79, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -121,8 +125,27 @@
             <div class="card card-memo mb-4">
                 <div class="card-header card-header-memo py-3">메모 목록</div>
                 <div class="card-body p-3 p-md-4">
+                    <form th:action="@{/}" method="get" class="memo-search mb-4" role="search">
+                        <label for="memoSearchInput" class="form-label small text-secondary mb-1">제목·내용 검색</label>
+                        <div class="input-group input-group-sm">
+                            <input type="search" class="form-control" id="memoSearchInput" name="q"
+                                   th:value="${memoQuery}" placeholder="키워드를 입력하세요" autocomplete="off"/>
+                            <button type="submit" class="btn btn-memo-primary">검색</button>
+                            <a th:href="@{/}" class="btn btn-outline-secondary" th:if="${memoSearchActive}">초기화</a>
+                        </div>
+                    </form>
+                    <p th:if="${memoSearchActive && !#lists.isEmpty(memos)}"
+                       class="small text-muted mb-3 mb-md-2">
+                        검색 결과 <strong th:text="${#lists.size(memos)}">0</strong>건
+                    </p>
                     <div th:if="${#lists.isEmpty(memos)}" class="text-muted text-center py-4">
-                        아직 메모가 없습니다. 왼쪽에서 첫 메모를 남겨 보세요.
+                        <th:block th:if="${memoSearchActive}">
+                            <p class="mb-2">「<strong th:text="${memoQuery}">키워드</strong>」에 맞는 메모가 없습니다.</p>
+                            <a th:href="@{/}" class="btn btn-sm btn-outline-secondary">검색 초기화</a>
+                        </th:block>
+                        <th:block th:unless="${memoSearchActive}">
+                            아직 메모가 없습니다. 왼쪽에서 첫 메모를 남겨 보세요.
+                        </th:block>
                     </div>
                     <ul class="list-unstyled mb-0" th:if="${!#lists.isEmpty(memos)}">
                         <li th:each="memo : ${memos}" class="memo-item p-3 mb-3">
@@ -156,6 +179,7 @@
                                     <p class="mb-0 small" th:text="${memo.content}" style="white-space: pre-wrap;">내용</p>
                                 </div>
                                 <form th:action="@{/memos/{id}/delete(id=${memo.id})}" method="post" class="shrink-0">
+                                    <input type="hidden" name="returnQ" th:if="${memoSearchActive}" th:value="${memoQuery}"/>
                                     <button type="submit" class="btn btn-outline-danger btn-sm">삭제</button>
                                 </form>
                             </div>
