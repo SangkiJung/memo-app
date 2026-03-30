@@ -5,8 +5,6 @@ import com.example.memo.entity.ActionType;
 import com.example.memo.entity.Memo;
 import com.example.memo.repository.ActionLogRepository;
 import com.example.memo.repository.MemoRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,17 +14,12 @@ import java.util.List;
 @Service
 public class MemoService {
 
-    private static final Logger log = LoggerFactory.getLogger(MemoService.class);
-
     private final MemoRepository memoRepository;
     private final ActionLogRepository actionLogRepository;
-    private final WeatherApiService weatherApiService;
 
-    public MemoService(MemoRepository memoRepository, ActionLogRepository actionLogRepository,
-                       WeatherApiService weatherApiService) {
+    public MemoService(MemoRepository memoRepository, ActionLogRepository actionLogRepository) {
         this.memoRepository = memoRepository;
         this.actionLogRepository = actionLogRepository;
-        this.weatherApiService = weatherApiService;
     }
 
     @Transactional(readOnly = true)
@@ -39,20 +32,13 @@ public class MemoService {
         return actionLogRepository.findAllByOrderByTimestampDesc();
     }
 
+    /**
+     * 위치·날씨는 화면에서 WeatherAPI로 조회한 뒤 전달된 값만 저장합니다. API를 여기서 다시 호출하지 않습니다.
+     */
     @Transactional
-    public void createMemo(String title, String content, String clientIp) {
+    public void createMemo(String title, String content, String cityName,
+                           String weatherCondition, Double tempC) {
         Instant now = Instant.now();
-        WeatherApiService.WeatherSnapshot snap = WeatherApiService.WeatherSnapshot.empty();
-        try {
-            snap = weatherApiService.fetchRealtimeForClientIp(clientIp);
-        } catch (Exception e) {
-            log.warn("날씨 API 처리 중 예외 — 메모는 저장합니다: {}", e.getMessage());
-        }
-
-        String cityName = snap.hasAny() ? snap.location() : null;
-        String weatherCondition = snap.weatherCondition();
-        Double tempC = snap.tempC();
-
         Memo memo = new Memo(
                 title,
                 content != null ? content : "",

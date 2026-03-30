@@ -74,7 +74,7 @@
 <div class="container py-4 py-md-5">
     <header class="mb-4 text-center text-md-start">
         <h1 class="page-title display-6 mb-1">기록하는 메모장</h1>
-        <p class="text-muted mb-0 small">메모를 남기면 DB·활동 로그와 함께, WeatherAPI 기준 위치·날씨(키 설정 시)가 자동 기록됩니다.</p>
+        <p class="text-muted mb-0 small">메모를 남기면 DB·활동 로그에 기록됩니다. 위치·날씨는 「새 메모」에서 옵션을 켠 뒤 조회했을 때만 함께 저장됩니다.</p>
     </header>
 
     <div class="row g-4">
@@ -83,30 +83,24 @@
                 <div class="card-header card-header-memo py-3">새 메모</div>
                 <div class="card-body p-4">
                     <div class="weather-preview-panel rounded-3 border p-3 mb-4">
-                        <div class="small fw-semibold text-secondary mb-2">
-                            지금 이 접속 기준 위치·날씨 <span class="fw-normal text-muted">(저장 시 DB에 기록되는 값과 동일)</span>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="weatherLoadOption"
+                                   aria-describedby="weatherLoadHelp"/>
+                            <label class="form-check-label fw-semibold text-secondary" for="weatherLoadOption">
+                                위치·날씨 조회 후 메모에 포함
+                            </label>
+                            <div id="weatherLoadHelp" class="form-text small">
+                                켜면 WeatherAPI를 한 번 호출해 현재 접속 기준 정보를 불러옵니다. 페이지 로드 시에는 호출하지 않습니다.
+                            </div>
                         </div>
-                        <div th:if="${weatherPreviewHasData}" class="d-flex flex-wrap align-items-center gap-2 memo-ctx">
-                            <span th:if="${weatherPreviewCity != null}"
-                                  class="badge rounded-pill bg-light text-dark border border-secondary-subtle">
-                                📍 <span th:text="${weatherPreviewCity}">서울</span>
-                            </span>
-                            <span class="text-secondary"
-                                  th:if="${weatherPreviewCity != null && (weatherPreviewCondition != null || weatherPreviewTempC != null)}">|</span>
-                            <span th:if="${weatherPreviewCondition != null || weatherPreviewTempC != null}"
-                                  class="badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm">
-                                <span th:text="${weatherPreviewEmoji}">☀️</span>
-                                <span th:if="${weatherPreviewCondition != null}"
-                                      th:text="${' ' + weatherPreviewCondition}"> 맑음</span>
-                                <span th:if="${weatherPreviewTempC != null}"
-                                      th:text="${' ' + #numbers.formatDecimal(weatherPreviewTempC, 1, 1) + '°C'}"> 25°C</span>
-                            </span>
+                        <div id="weatherPreviewResult" class="memo-ctx">
+                            <p class="small text-muted mb-0">옵션을 켜면 조회 결과가 여기에 표시되고, 저장 시 함께 기록됩니다.</p>
                         </div>
-                        <p th:unless="${weatherPreviewHasData}" class="small text-muted mb-0">
-                            표시할 위치·날씨가 없습니다. 환경 변수 <code class="small">WEATHER_API_KEY</code>를 설정한 뒤 페이지를 새로고침하세요.
-                        </p>
                     </div>
-                    <form th:action="@{/memos}" method="post">
+                    <form th:action="@{/memos}" method="post" id="memoCreateForm">
+                        <input type="hidden" name="memoCity" id="memoCity" value=""/>
+                        <input type="hidden" name="memoWeatherCondition" id="memoWeatherCondition" value=""/>
+                        <input type="hidden" name="memoTempC" id="memoTempC" value=""/>
                         <div class="mb-3">
                             <label for="title" class="form-label">제목</label>
                             <input type="text" class="form-control" id="title" name="title" required
@@ -208,5 +202,106 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    (function () {
+        const previewUrl = /*[[@{/api/weather/preview}]]*/ '/api/weather/preview';
+        const opt = document.getElementById('weatherLoadOption');
+        const panel = document.getElementById('weatherPreviewResult');
+        const form = document.getElementById('memoCreateForm');
+        const hCity = document.getElementById('memoCity');
+        const hCond = document.getElementById('memoWeatherCondition');
+        const hTemp = document.getElementById('memoTempC');
+
+        const idleHtml = '<p class="small text-muted mb-0">옵션을 켜면 조회 결과가 여기에 표시되고, 저장 시 함께 기록됩니다.</p>';
+
+        function clearHidden() {
+            hCity.value = '';
+            hCond.value = '';
+            hTemp.value = '';
+        }
+
+        function setPanelHtml(html) {
+            panel.innerHTML = html;
+        }
+
+        function setPanelMessage(text, isError) {
+            const p = document.createElement('p');
+            p.className = 'small mb-0 ' + (isError ? 'text-danger' : 'text-muted');
+            p.textContent = text;
+            panel.replaceChildren(p);
+        }
+
+        async function loadWeather() {
+            clearHidden();
+            setPanelHtml('<p class="small text-secondary mb-0"><span class="spinner-border spinner-border-sm me-2" role="status"></span>WeatherAPI 조회 중…</p>');
+            try {
+                const res = await fetch(previewUrl, {headers: {'Accept': 'application/json'}});
+                const data = await res.json();
+                if (!data.ok) {
+                    setPanelMessage(data.message || '조회에 실패했습니다.', true);
+                    return;
+                }
+                hCity.value = data.cityName || '';
+                hCond.value = data.weatherCondition || '';
+                hTemp.value = data.tempC != null ? String(data.tempC) : '';
+
+                const wrap = document.createElement('div');
+                wrap.className = 'd-flex flex-wrap align-items-center gap-2';
+
+                if (data.cityName) {
+                    const b = document.createElement('span');
+                    b.className = 'badge rounded-pill bg-light text-dark border border-secondary-subtle';
+                    b.textContent = '📍 ' + data.cityName;
+                    wrap.appendChild(b);
+                }
+                if (data.cityName && (data.weatherCondition != null || data.tempC != null)) {
+                    const sep = document.createElement('span');
+                    sep.className = 'text-secondary';
+                    sep.textContent = '|';
+                    wrap.appendChild(sep);
+                }
+                if (data.weatherCondition != null || data.tempC != null) {
+                    const b = document.createElement('span');
+                    b.className = 'badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm';
+                    const parts = [];
+                    parts.push(data.emoji || '🌤️');
+                    if (data.weatherCondition) {
+                        parts.push(data.weatherCondition);
+                    }
+                    if (data.tempC != null) {
+                        parts.push(Number(data.tempC).toFixed(1) + '°C');
+                    }
+                    b.textContent = parts.join(' ');
+                    wrap.appendChild(b);
+                }
+                if (!wrap.hasChildNodes()) {
+                    setPanelMessage('표시할 위치·날씨 정보가 없습니다.', true);
+                    clearHidden();
+                    return;
+                }
+                panel.replaceChildren(wrap);
+            } catch (e) {
+                setPanelMessage('네트워크 오류로 조회할 수 없습니다.', true);
+            }
+        }
+
+        opt.addEventListener('change', function () {
+            if (this.checked) {
+                loadWeather();
+            } else {
+                clearHidden();
+                setPanelHtml(idleHtml);
+            }
+        });
+
+        form.addEventListener('submit', function () {
+            if (!opt.checked) {
+                clearHidden();
+            }
+        });
+    })();
+    /*]]>*/
+</script>
 </body>
 </html>
