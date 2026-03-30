@@ -26,23 +26,26 @@ public class Memo {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** 도시명 (WeatherAPI location.name) */
     private String location;
 
-    private String weatherDescription;
+    @Column(name = "weather_condition")
+    private String weatherCondition;
 
-    private Double temperature;
+    @Column(name = "temp_c")
+    private Double tempC;
 
     protected Memo() {
     }
 
     public Memo(String title, String content, Instant createdAt, String location,
-                String weatherDescription, Double temperature) {
+                String weatherCondition, Double tempC) {
         this.title = title;
         this.content = content;
         this.createdAt = createdAt;
         this.location = location;
-        this.weatherDescription = weatherDescription;
-        this.temperature = temperature;
+        this.weatherCondition = weatherCondition;
+        this.tempC = tempC;
     }
 
     public Long getId() {
@@ -65,11 +68,11 @@ public class Memo {
         return location;
     }
 
-    public String getWeatherDescription() {
-        return weatherDescription;
+    public String getWeatherCondition() {
+        return weatherCondition;
     }
 
-    public Double getTemperature() {
-        return temperature;
+    public Double getTempC() {
+        return tempC;
     }
 }

@@ -20,13 +20,13 @@ public class MemoService {
 
     private final MemoRepository memoRepository;
     private final ActionLogRepository actionLogRepository;
-    private final GeoWeatherService geoWeatherService;
+    private final WeatherApiService weatherApiService;
 
     public MemoService(MemoRepository memoRepository, ActionLogRepository actionLogRepository,
-                       GeoWeatherService geoWeatherService) {
+                       WeatherApiService weatherApiService) {
         this.memoRepository = memoRepository;
         this.actionLogRepository = actionLogRepository;
-        this.geoWeatherService = geoWeatherService;
+        this.weatherApiService = weatherApiService;
     }
 
     @Transactional(readOnly = true)
@@ -42,24 +42,24 @@ public class MemoService {
     @Transactional
     public void createMemo(String title, String content, String clientIp) {
         Instant now = Instant.now();
-        GeoWeatherService.WeatherSnapshot snap = GeoWeatherService.WeatherSnapshot.empty();
+        WeatherApiService.WeatherSnapshot snap = WeatherApiService.WeatherSnapshot.empty();
         try {
-            snap = geoWeatherService.resolveFromClientIp(clientIp);
+            snap = weatherApiService.fetchRealtimeForClientIp(clientIp);
         } catch (Exception e) {
-            log.warn("위치/날씨 조회 중 예외 — 메모는 저장합니다: {}", e.getMessage());
+            log.warn("날씨 API 처리 중 예외 — 메모는 저장합니다: {}", e.getMessage());
         }
 
-        String location = snap.hasAny() ? snap.city() : null;
-        String weatherDesc = snap.weatherMain();
-        Double temp = snap.temperatureCelsius();
+        String location = snap.hasAny() ? snap.location() : null;
+        String weatherCondition = snap.weatherCondition();
+        Double tempC = snap.tempC();
 
         Memo memo = new Memo(
                 title,
                 content != null ? content : "",
                 now,
                 location,
-                weatherDesc,
-                temp
+                weatherCondition,
+                tempC
         );
         memoRepository.save(memo);
         actionLogRepository.save(new ActionLog(ActionType.생성, title, now));

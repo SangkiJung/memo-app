@@ -9,7 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 
 @Configuration
-@EnableConfigurationProperties(MemoExternalApiProperties.class)
+@EnableConfigurationProperties(WeatherApiProperties.class)
 public class HttpClientConfig {
 
     @Bean
