@@ -64,6 +64,10 @@
         .memo-ctx .badge {
             font-weight: 500;
         }
+        .weather-preview-panel {
+            border-color: rgba(45, 106, 79, 0.2) !important;
+            background: linear-gradient(135deg, rgba(216, 243, 220, 0.35) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+        }
     </style>
 </head>
 <body>
@@ -78,6 +82,30 @@
             <div class="card card-memo h-100">
                 <div class="card-header card-header-memo py-3">새 메모</div>
                 <div class="card-body p-4">
+                    <div class="weather-preview-panel rounded-3 border p-3 mb-4">
+                        <div class="small fw-semibold text-secondary mb-2">
+                            지금 이 접속 기준 위치·날씨 <span class="fw-normal text-muted">(저장 시 DB에 기록되는 값과 동일)</span>
+                        </div>
+                        <div th:if="${weatherPreviewHasData}" class="d-flex flex-wrap align-items-center gap-2 memo-ctx">
+                            <span th:if="${weatherPreviewCity != null}"
+                                  class="badge rounded-pill bg-light text-dark border border-secondary-subtle">
+                                📍 <span th:text="${weatherPreviewCity}">서울</span>
+                            </span>
+                            <span class="text-secondary"
+                                  th:if="${weatherPreviewCity != null && (weatherPreviewCondition != null || weatherPreviewTempC != null)}">|</span>
+                            <span th:if="${weatherPreviewCondition != null || weatherPreviewTempC != null}"
+                                  class="badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm">
+                                <span th:text="${weatherPreviewEmoji}">☀️</span>
+                                <span th:if="${weatherPreviewCondition != null}"
+                                      th:text="${' ' + weatherPreviewCondition}"> 맑음</span>
+                                <span th:if="${weatherPreviewTempC != null}"
+                                      th:text="${' ' + #numbers.formatDecimal(weatherPreviewTempC, 1, 1) + '°C'}"> 25°C</span>
+                            </span>
+                        </div>
+                        <p th:unless="${weatherPreviewHasData}" class="small text-muted mb-0">
+                            표시할 위치·날씨가 없습니다. 환경 변수 <code class="small">WEATHER_API_KEY</code>를 설정한 뒤 페이지를 새로고침하세요.
+                        </p>
+                    </div>
                     <form th:action="@{/memos}" method="post">
                         <div class="mb-3">
                             <label for="title" class="form-label">제목</label>
