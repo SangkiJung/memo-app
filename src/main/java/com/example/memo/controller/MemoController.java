@@ -1,6 +1,8 @@
 package com.example.memo.controller;
 
 import com.example.memo.service.MemoService;
+import com.example.memo.support.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,11 +30,13 @@ public class MemoController {
     }
 
     @PostMapping("/memos")
-    public String create(@RequestParam String title, @RequestParam(required = false, defaultValue = "") String content) {
+    public String create(@RequestParam String title,
+                         @RequestParam(required = false, defaultValue = "") String content,
+                         HttpServletRequest request) {
         if (title == null || title.isBlank()) {
             return "redirect:/";
         }
-        memoService.createMemo(title.trim(), content);
+        memoService.createMemo(title.trim(), content, ClientIpResolver.resolve(request));
         return "redirect:/";
     }
 

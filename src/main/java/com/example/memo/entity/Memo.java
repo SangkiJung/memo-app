@@ -26,13 +26,23 @@ public class Memo {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    private String location;
+
+    private String weatherDescription;
+
+    private Double temperature;
+
     protected Memo() {
     }
 
-    public Memo(String title, String content, Instant createdAt) {
+    public Memo(String title, String content, Instant createdAt, String location,
+                String weatherDescription, Double temperature) {
         this.title = title;
         this.content = content;
         this.createdAt = createdAt;
+        this.location = location;
+        this.weatherDescription = weatherDescription;
+        this.temperature = temperature;
     }
 
     public Long getId() {
@@ -49,5 +59,17 @@ public class Memo {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getWeatherDescription() {
+        return weatherDescription;
+    }
+
+    public Double getTemperature() {
+        return temperature;
     }
 }

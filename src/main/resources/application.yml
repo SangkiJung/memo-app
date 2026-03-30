@@ -18,6 +18,13 @@ spring:
 server:
   port: 8080
 
+memo:
+  external-api:
+    ip-api-base-url: http://ip-api.com/json
+    open-weather:
+      api-key: ${OPENWEATHER_API_KEY:}
+      base-url: https://api.openweathermap.org/data/2.5
+
 logging:
   level:
     root: INFO

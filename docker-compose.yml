@@ -48,6 +48,7 @@ services:
       DB_NAME: memoapp
       DB_USER: memo
       DB_PASSWORD: memo
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
       DD_VERSION: 1.0.0
       DD_DBM_PROPAGATION_MODE: full
       DD_DBM_TRACE_PREPARED_STATEMENTS: true

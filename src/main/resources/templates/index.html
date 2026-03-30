@@ -58,13 +58,19 @@
         textarea.form-control {
             min-height: 120px;
         }
+        .memo-ctx {
+            font-size: 0.8125rem;
+        }
+        .memo-ctx .badge {
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
 <div class="container py-4 py-md-5">
     <header class="mb-4 text-center text-md-start">
         <h1 class="page-title display-6 mb-1">기록하는 메모장</h1>
-        <p class="text-muted mb-0 small">메모를 남기면 DB와 활동 로그에 함께 기록됩니다.</p>
+        <p class="text-muted mb-0 small">메모를 남기면 DB와 활동 로그에 기록되며, 접속 IP 기준 위치·날씨(설정 시)도 함께 저장됩니다.</p>
     </header>
 
     <div class="row g-4">
@@ -101,6 +107,34 @@
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div class="flex-grow-1">
                                     <h2 class="h6 mb-1" th:text="${memo.title}">제목</h2>
+                                    <div class="memo-ctx text-muted mb-2 d-flex flex-wrap align-items-center gap-2"
+                                         th:if="${memo.location != null || memo.weatherDescription != null || memo.temperature != null}">
+                                        <span th:if="${memo.location != null}"
+                                              class="badge rounded-pill bg-light text-dark border border-secondary-subtle">
+                                            📍 <span th:text="${memo.location}">서울</span>
+                                        </span>
+                                        <span class="text-secondary"
+                                              th:if="${memo.location != null && (memo.weatherDescription != null || memo.temperature != null)}">|</span>
+                                        <span th:if="${memo.weatherDescription != null || memo.temperature != null}"
+                                              class="badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm">
+                                            <span th:switch="${memo.weatherDescription}">
+                                                <span th:case="'Clear'">☀️</span>
+                                                <span th:case="'Clouds'">☁️</span>
+                                                <span th:case="'Rain'">🌧️</span>
+                                                <span th:case="'Drizzle'">🌦️</span>
+                                                <span th:case="'Thunderstorm'">⛈️</span>
+                                                <span th:case="'Snow'">❄️</span>
+                                                <span th:case="'Mist'">🌫️</span>
+                                                <span th:case="'Fog'">🌫️</span>
+                                                <span th:case="'Haze'">🌫️</span>
+                                                <span th:case="*">🌤️</span>
+                                            </span>
+                                            <span th:if="${memo.weatherDescription != null}"
+                                                  th:text="${' ' + memo.weatherDescription}"> Clear</span>
+                                            <span th:if="${memo.temperature != null}"
+                                                  th:text="${' ' + #numbers.formatDecimal(memo.temperature, 1, 1) + '°C'}"> 25°C</span>
+                                        </span>
+                                    </div>
                                     <p class="small text-muted mb-1"
                                        th:text="${#temporals.format(memo.createdAt.atZone(zone), 'yyyy-MM-dd HH:mm')}">날짜</p>
                                     <p class="mb-0 small" th:text="${memo.content}" style="white-space: pre-wrap;">내용</p>
