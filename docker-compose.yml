@@ -51,7 +51,8 @@ services:
       WEATHER_API_KEY: 390a860c8b4747b681321954263003
       DD_ENV: prd
       DD_SERVICE: memo-app
-      DD_VERSION: 1.0.4
+      DD_VERSION: 1.0.5
+      DD_TRACE_SAMPLING_RULES: '[{"service": "memo-app", "sample_rate": 1.0}]'
       DD_PROFILING_ENABLED: true
       DD_DYNAMIC_INSTRUMENTATION_ENABLED: true
       DD_DBM_PROPAGATION_MODE: full
