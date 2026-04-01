@@ -2,8 +2,10 @@ package com.example.memo.service;
 
 import com.example.memo.config.WeatherApiProperties;
 import com.example.memo.service.dto.WeatherApiCurrentResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -20,10 +22,12 @@ public class WeatherApiService {
 
     private final RestTemplate restTemplate;
     private final WeatherApiProperties properties;
+    private final ObjectMapper objectMapper;
 
-    public WeatherApiService(RestTemplate restTemplate, WeatherApiProperties properties) {
+    public WeatherApiService(RestTemplate restTemplate, WeatherApiProperties properties, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.properties = properties;
+        this.objectMapper = objectMapper;
     }
 
     @PostConstruct
@@ -41,10 +45,14 @@ public class WeatherApiService {
      * Realtime Weather API: 클라이언트 IP 또는 {@code auto:ip}로 위치·날씨를 한 번에 조회합니다.
      */
     public WeatherSnapshot fetchRealtimeForClientIp(String clientIp) {
+        return fetchRealtimeForClientIpWithRaw(clientIp).snapshot();
+    }
+
+    public WeatherFetchResult fetchRealtimeForClientIpWithRaw(String clientIp) {
         String apiKey = properties.getApiKey() != null ? properties.getApiKey().trim() : "";
         if (apiKey == null || apiKey.isBlank()) {
             log.error("WEATHER_API_KEY 미설정 - memo.weather-api.api-key 또는 WEATHER_API_KEY 환경변수를 확인하세요.");
-            return WeatherSnapshot.empty();
+            return WeatherFetchResult.empty();
         }
 
         String q = toWeatherQuery(clientIp);
@@ -60,10 +68,17 @@ public class WeatherApiService {
             String requestUrlMasked = uri.toString().replace(apiKey, "****");
             log.info("WeatherAPI 호출 시작 - clientIp={}, query={}, url={}", clientIp, q, requestUrlMasked);
 
-            WeatherApiCurrentResponse body = restTemplate.getForObject(uri, WeatherApiCurrentResponse.class);
+            ResponseEntity<String> res = restTemplate.getForEntity(uri, String.class);
+            String rawBody = res.getBody();
+            int status = res.getStatusCode().value();
+            log.info("WeatherAPI HTTP 응답 수신 - status={}, bodyLength={}", status, rawBody != null ? rawBody.length() : 0);
+
+            WeatherApiCurrentResponse body = (rawBody == null || rawBody.isBlank())
+                    ? null
+                    : objectMapper.readValue(rawBody, WeatherApiCurrentResponse.class);
             if (body == null || body.getLocation() == null || body.getCurrent() == null) {
                 log.info("WeatherAPI 응답 비어있음/필드 누락 - query={}", q);
-                return WeatherSnapshot.empty();
+                return new WeatherFetchResult(WeatherSnapshot.empty(), rawBody, status);
             }
 
             String city = body.getLocation().getName();
@@ -75,12 +90,12 @@ public class WeatherApiService {
 
             if (city == null || city.isBlank()) {
                 log.info("WeatherAPI 응답에 도시명이 없어 스냅샷을 비웁니다 - query={}", q);
-                return WeatherSnapshot.empty();
+                return new WeatherFetchResult(WeatherSnapshot.empty(), rawBody, status);
             }
-            return new WeatherSnapshot(city, conditionText, tempC);
+            return new WeatherFetchResult(new WeatherSnapshot(city, conditionText, tempC), rawBody, status);
         } catch (Exception e) {
             log.warn("WeatherAPI 호출 실패 (clientIp={}, q={}): {}", clientIp, q, e.getMessage());
-            return WeatherSnapshot.empty();
+            return WeatherFetchResult.empty();
         }
     }
 
@@ -88,10 +103,14 @@ public class WeatherApiService {
      * WeatherAPI q 파라미터에 도시명/키워드를 직접 넘겨 조회합니다. (예: {@code Seoul})
      */
     public WeatherSnapshot fetchRealtimeForQuery(String qRaw) {
+        return fetchRealtimeForQueryWithRaw(qRaw).snapshot();
+    }
+
+    public WeatherFetchResult fetchRealtimeForQueryWithRaw(String qRaw) {
         String apiKey = properties.getApiKey() != null ? properties.getApiKey().trim() : "";
         if (apiKey == null || apiKey.isBlank()) {
             log.error("WEATHER_API_KEY 미설정 - memo.weather-api.api-key 또는 WEATHER_API_KEY 환경변수를 확인하세요.");
-            return WeatherSnapshot.empty();
+            return WeatherFetchResult.empty();
         }
         String q = (qRaw == null || qRaw.isBlank()) ? "Seoul" : qRaw.strip();
         try {
@@ -106,10 +125,17 @@ public class WeatherApiService {
             String requestUrlMasked = uri.toString().replace(apiKey, "****");
             log.info("WeatherAPI 호출 시작(query 직접) - q={}, url={}", q, requestUrlMasked);
 
-            WeatherApiCurrentResponse body = restTemplate.getForObject(uri, WeatherApiCurrentResponse.class);
+            ResponseEntity<String> res = restTemplate.getForEntity(uri, String.class);
+            String rawBody = res.getBody();
+            int status = res.getStatusCode().value();
+            log.info("WeatherAPI HTTP 응답 수신(query 직접) - status={}, bodyLength={}", status, rawBody != null ? rawBody.length() : 0);
+
+            WeatherApiCurrentResponse body = (rawBody == null || rawBody.isBlank())
+                    ? null
+                    : objectMapper.readValue(rawBody, WeatherApiCurrentResponse.class);
             if (body == null || body.getLocation() == null || body.getCurrent() == null) {
                 log.info("WeatherAPI 응답 비어있음/필드 누락 - q={}", q);
-                return WeatherSnapshot.empty();
+                return new WeatherFetchResult(WeatherSnapshot.empty(), rawBody, status);
             }
 
             String city = body.getLocation().getName();
@@ -121,12 +147,12 @@ public class WeatherApiService {
 
             if (city == null || city.isBlank()) {
                 log.info("WeatherAPI 응답에 도시명이 없어 스냅샷을 비웁니다 - q={}", q);
-                return WeatherSnapshot.empty();
+                return new WeatherFetchResult(WeatherSnapshot.empty(), rawBody, status);
             }
-            return new WeatherSnapshot(city, conditionText, tempC);
+            return new WeatherFetchResult(new WeatherSnapshot(city, conditionText, tempC), rawBody, status);
         } catch (Exception e) {
             log.error("WeatherAPI 호출 실패(query 직접) - q={}, reason={}", q, e.getMessage(), e);
-            return WeatherSnapshot.empty();
+            return WeatherFetchResult.empty();
         }
     }
 
@@ -179,6 +205,12 @@ public class WeatherApiService {
             return (location != null && !location.isBlank())
                     || (weatherCondition != null && !weatherCondition.isBlank())
                     || tempC != null;
+        }
+    }
+
+    public record WeatherFetchResult(WeatherSnapshot snapshot, String rawBody, Integer httpStatus) {
+        public static WeatherFetchResult empty() {
+            return new WeatherFetchResult(WeatherSnapshot.empty(), null, null);
         }
     }
 }
