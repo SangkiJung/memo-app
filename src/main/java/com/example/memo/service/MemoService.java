@@ -45,7 +45,7 @@ public class MemoService {
     }
 
     /**
-     * 위치·날씨는 화면에서 WeatherAPI로 조회한 뒤 전달된 값만 저장합니다. API를 여기서 다시 호출하지 않습니다.
+     * 위치·날씨는 호출자가 전달한 값으로만 저장합니다(저장 시점에 컨트롤러/서비스에서 WeatherAPI 조회 후 값이 채워집니다).
      */
     @Transactional
     public void createMemo(String title, String content, String cityName,

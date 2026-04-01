@@ -1,6 +1,10 @@
 package com.example.memo.controller;
 
 import com.example.memo.service.MemoService;
+import com.example.memo.service.WeatherApiService;
+import com.example.memo.service.WeatherResolutionService;
+import com.example.memo.support.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,9 +20,11 @@ import java.time.ZoneId;
 public class MemoController {
 
     private final MemoService memoService;
+    private final WeatherResolutionService weatherResolutionService;
 
-    public MemoController(MemoService memoService) {
+    public MemoController(MemoService memoService, WeatherResolutionService weatherResolutionService) {
         this.memoService = memoService;
+        this.weatherResolutionService = weatherResolutionService;
     }
 
     @GetMapping("/")
@@ -37,19 +43,22 @@ public class MemoController {
     @PostMapping("/memos")
     public String create(@RequestParam String title,
                          @RequestParam(required = false, defaultValue = "") String content,
-                         @RequestParam(required = false) String memoCity,
-                         @RequestParam(required = false) String memoWeatherCondition,
-                         @RequestParam(required = false) String memoTempC,
-                         @RequestParam(name = "returnQ", required = false) String returnQ) {
+                         @RequestParam(name = "includeWeather", defaultValue = "false") boolean includeWeather,
+                         @RequestParam(name = "returnQ", required = false) String returnQ,
+                         HttpServletRequest request) {
         if (title == null || title.isBlank()) {
             return redirectToIndex(returnQ);
         }
+        WeatherApiService.WeatherSnapshot snap = weatherResolutionService.resolveOnSave(
+                includeWeather,
+                ClientIpResolver.resolve(request)
+        );
         memoService.createMemo(
                 title.trim(),
                 content,
-                blankToNull(memoCity),
-                blankToNull(memoWeatherCondition),
-                parseDoubleNullable(memoTempC)
+                snap.location(),
+                blankToNull(snap.weatherCondition()),
+                snap.tempC()
         );
         return redirectToIndex(returnQ);
     }
@@ -59,17 +68,6 @@ public class MemoController {
             return null;
         }
         return s.trim();
-    }
-
-    private static Double parseDoubleNullable(String s) {
-        if (s == null || s.isBlank()) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(s.trim().replace(',', '.'));
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     @PostMapping("/memos/{id}/delete")

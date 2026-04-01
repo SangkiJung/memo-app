@@ -8,14 +8,18 @@ public final class ClientIpResolver {
     }
 
     public static String resolve(HttpServletRequest request) {
+        if (request == null) {
+            return "";
+        }
         String xff = request.getHeader("X-Forwarded-For");
         if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
+            return xff.split(",")[0].strip();
         }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isBlank()) {
+            return xRealIp.strip();
         }
-        return request.getRemoteAddr();
+        String addr = request.getRemoteAddr();
+        return addr != null ? addr : "";
     }
 }
