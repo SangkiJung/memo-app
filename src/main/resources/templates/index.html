@@ -89,7 +89,8 @@
                     <div class="weather-preview-panel rounded-3 border p-3 mb-4">
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" role="switch" id="includeWeather"
-                                   name="includeWeather" value="true" aria-describedby="weatherLoadHelp"/>
+                                   name="includeWeather" value="true" form="memoCreateForm"
+                                   aria-describedby="weatherLoadHelp"/>
                             <label class="form-check-label fw-semibold text-secondary" for="includeWeather">
                                 저장 시 위치·날씨를 메모에 포함
                             </label>
@@ -150,16 +151,16 @@
                                     <h2 class="h6 mb-1" th:text="${memo.title}">제목</h2>
                                     <div class="memo-ctx mb-2 d-flex flex-wrap align-items-center gap-2">
                                         <th:block th:if="${memo.hasWeatherOrLocationInfo()}">
-                                            <span th:if="${memo.cityName != null}"
+                                            <span th:if="${!#strings.isEmpty(memo.cityName)}"
                                                   class="badge rounded-pill bg-light text-dark border border-secondary-subtle">
                                                 📍 <span th:text="${memo.cityName}">서울</span>
                                             </span>
                                             <span class="text-secondary"
-                                                  th:if="${memo.cityName != null && (memo.weatherCondition != null || memo.tempC != null)}">|</span>
-                                            <span th:if="${memo.weatherCondition != null || memo.tempC != null}"
+                                                  th:if="${!#strings.isEmpty(memo.cityName) && (!#strings.isEmpty(memo.weatherCondition) || memo.tempC != null)}">|</span>
+                                            <span th:if="${!#strings.isEmpty(memo.weatherCondition) || memo.tempC != null}"
                                                   class="badge rounded-pill bg-white text-dark border border-secondary-subtle shadow-sm">
                                                 <span th:text="${memo.weatherEmoji}">☀️</span>
-                                                <span th:if="${memo.weatherCondition != null}"
+                                                <span th:if="${!#strings.isEmpty(memo.weatherCondition)}"
                                                       th:text="${' ' + memo.weatherCondition}"> 맑음</span>
                                                 <span th:if="${memo.tempC != null}"
                                                       th:text="${' ' + #numbers.formatDecimal(memo.tempC, 1, 1) + '°C'}"> 25°C</span>

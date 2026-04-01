@@ -20,6 +20,25 @@ public final class ClientIpResolver {
             return xRealIp.strip();
         }
         String addr = request.getRemoteAddr();
-        return addr != null ? addr : "";
+        return normalizeIp(addr != null ? addr : "");
+    }
+
+    private static String normalizeIp(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String value = raw.strip();
+        if (value.isEmpty()) {
+            return "";
+        }
+        if (value.startsWith("::ffff:")) {
+            value = value.substring("::ffff:".length());
+        }
+        if (value.startsWith("[") && value.contains("]")) {
+            value = value.substring(1, value.indexOf(']'));
+        } else if (value.indexOf(':') >= 0 && value.chars().filter(ch -> ch == ':').count() == 1) {
+            value = value.substring(0, value.indexOf(':'));
+        }
+        return value;
     }
 }

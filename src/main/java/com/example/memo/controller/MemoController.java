@@ -5,6 +5,8 @@ import com.example.memo.service.WeatherApiService;
 import com.example.memo.service.WeatherResolutionService;
 import com.example.memo.support.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +20,8 @@ import java.time.ZoneId;
 
 @Controller
 public class MemoController {
+
+    private static final Logger log = LoggerFactory.getLogger(MemoController.class);
 
     private final MemoService memoService;
     private final WeatherResolutionService weatherResolutionService;
@@ -49,10 +53,14 @@ public class MemoController {
         if (title == null || title.isBlank()) {
             return redirectToIndex(returnQ);
         }
+        String clientIp = ClientIpResolver.resolve(request);
+        log.info("메모 저장 요청 - includeWeather={}, clientIp={}", includeWeather, clientIp);
         WeatherApiService.WeatherSnapshot snap = weatherResolutionService.resolveOnSave(
                 includeWeather,
-                ClientIpResolver.resolve(request)
+                clientIp
         );
+        log.info("메모 저장용 날씨 스냅샷 - location={}, condition={}, tempC={}",
+                snap.location(), snap.weatherCondition(), snap.tempC());
         memoService.createMemo(
                 title.trim(),
                 content,

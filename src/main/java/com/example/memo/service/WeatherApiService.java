@@ -7,7 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import jakarta.annotation.PostConstruct;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
@@ -24,13 +26,24 @@ public class WeatherApiService {
         this.properties = properties;
     }
 
+    @PostConstruct
+    void logConfigState() {
+        String key = properties.getApiKey();
+        boolean keyPresent = key != null && !key.isBlank();
+        log.info("WeatherAPI 설정 - baseUrl={}, apiKeyConfigured={}",
+                trimTrailingSlash(properties.getBaseUrl()), keyPresent);
+        if (!keyPresent) {
+            log.error("WEATHER_API_KEY가 비어 있습니다. 날씨/위치 정보는 기본값으로 저장됩니다.");
+        }
+    }
+
     /**
      * Realtime Weather API: 클라이언트 IP 또는 {@code auto:ip}로 위치·날씨를 한 번에 조회합니다.
      */
     public WeatherSnapshot fetchRealtimeForClientIp(String clientIp) {
-        String apiKey = properties.getApiKey();
+        String apiKey = properties.getApiKey() != null ? properties.getApiKey().trim() : "";
         if (apiKey == null || apiKey.isBlank()) {
-            log.debug("WEATHER_API_KEY 미설정 — 날씨/위치 생략");
+            log.error("WEATHER_API_KEY 미설정 - memo.weather-api.api-key 또는 WEATHER_API_KEY 환경변수를 확인하세요.");
             return WeatherSnapshot.empty();
         }
 
@@ -44,9 +57,12 @@ public class WeatherApiService {
                     .encode(StandardCharsets.UTF_8)
                     .build()
                     .toUri();
+            String requestUrlMasked = uri.toString().replace(apiKey, "****");
+            log.info("WeatherAPI 호출 시작 - clientIp={}, query={}, url={}", clientIp, q, requestUrlMasked);
 
             WeatherApiCurrentResponse body = restTemplate.getForObject(uri, WeatherApiCurrentResponse.class);
             if (body == null || body.getLocation() == null || body.getCurrent() == null) {
+                log.info("WeatherAPI 응답 비어있음/필드 누락 - query={}", q);
                 return WeatherSnapshot.empty();
             }
 
@@ -55,13 +71,15 @@ public class WeatherApiService {
                     ? body.getCurrent().getCondition().getText()
                     : null;
             Double tempC = body.getCurrent().getTempC();
+            log.info("WeatherAPI 응답 수신 - city={}, condition={}, tempC={}", city, conditionText, tempC);
 
             if (city == null || city.isBlank()) {
+                log.info("WeatherAPI 응답에 도시명이 없어 스냅샷을 비웁니다 - query={}", q);
                 return WeatherSnapshot.empty();
             }
             return new WeatherSnapshot(city, conditionText, tempC);
         } catch (Exception e) {
-            log.warn("WeatherAPI 호출 실패 (q={}): {}", q, e.getMessage());
+            log.warn("WeatherAPI 호출 실패 (clientIp={}, q={}): {}", clientIp, q, e.getMessage());
             return WeatherSnapshot.empty();
         }
     }
@@ -73,21 +91,28 @@ public class WeatherApiService {
         if (clientIp == null || clientIp.isBlank()) {
             return "auto:ip";
         }
-        String ip = clientIp.trim();
-        if ("127.0.0.1".equals(ip) || "::1".equalsIgnoreCase(ip) || "0:0:0:0:0:0:0:1".equalsIgnoreCase(ip)) {
+        String ip = normalizeIp(clientIp.trim());
+        try {
+            InetAddress address = InetAddress.getByName(ip);
+            if (address.isAnyLocalAddress()
+                    || address.isLoopbackAddress()
+                    || address.isSiteLocalAddress()
+                    || address.isLinkLocalAddress()) {
+                return "auto:ip";
+            }
+            return ip;
+        } catch (Exception ignored) {
             return "auto:ip";
         }
-        if (ip.startsWith("10.")) {
-            return "auto:ip";
+    }
+
+    private static String normalizeIp(String raw) {
+        String ip = raw;
+        if (ip.startsWith("::ffff:")) {
+            ip = ip.substring("::ffff:".length());
         }
-        if (ip.startsWith("192.168.")) {
-            return "auto:ip";
-        }
-        if (ip.matches("172\\.(1[6-9]|2\\d|3[0-1])\\..+")) {
-            return "auto:ip";
-        }
-        if (ip.toLowerCase().startsWith("fe80:")) {
-            return "auto:ip";
+        if (ip.startsWith("[") && ip.contains("]")) {
+            ip = ip.substring(1, ip.indexOf(']'));
         }
         return ip;
     }
@@ -105,7 +130,9 @@ public class WeatherApiService {
         }
 
         public boolean hasAny() {
-            return location != null && !location.isBlank();
+            return (location != null && !location.isBlank())
+                    || (weatherCondition != null && !weatherCondition.isBlank())
+                    || tempC != null;
         }
     }
 }

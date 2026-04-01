@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class WeatherResolutionService {
 
     private static final Logger log = LoggerFactory.getLogger(WeatherResolutionService.class);
+    private static final String FALLBACK_TEXT = "정보 없음";
 
     private final WeatherApiService weatherApiService;
     private final Executor weatherApiExecutor;
@@ -31,8 +32,9 @@ public class WeatherResolutionService {
         if (!includeWeather) {
             return WeatherApiService.WeatherSnapshot.empty();
         }
+        log.info("메모 저장 시 WeatherAPI 조회 시작 - clientIp={}", clientIp);
         try {
-            return CompletableFuture
+            WeatherApiService.WeatherSnapshot snap = CompletableFuture
                     .supplyAsync(() -> weatherApiService.fetchRealtimeForClientIp(clientIp), weatherApiExecutor)
                     .orTimeout(12, TimeUnit.SECONDS)
                     .exceptionally(ex -> {
@@ -40,9 +42,26 @@ public class WeatherResolutionService {
                         return WeatherApiService.WeatherSnapshot.empty();
                     })
                     .join();
+            if (!snap.hasAny()) {
+                log.info("WeatherAPI 결과 비어있음 - 기본값으로 저장");
+                return fallbackSnapshot();
+            }
+            return withFallbackFields(snap);
         } catch (Exception e) {
             log.warn("WeatherAPI 조회 중 오류: {}", e.getMessage());
-            return WeatherApiService.WeatherSnapshot.empty();
+            return fallbackSnapshot();
         }
+    }
+
+    private static WeatherApiService.WeatherSnapshot withFallbackFields(WeatherApiService.WeatherSnapshot snap) {
+        String location = (snap.location() == null || snap.location().isBlank()) ? FALLBACK_TEXT : snap.location().trim();
+        String condition = (snap.weatherCondition() == null || snap.weatherCondition().isBlank())
+                ? FALLBACK_TEXT
+                : snap.weatherCondition().trim();
+        return new WeatherApiService.WeatherSnapshot(location, condition, snap.tempC());
+    }
+
+    private static WeatherApiService.WeatherSnapshot fallbackSnapshot() {
+        return new WeatherApiService.WeatherSnapshot(FALLBACK_TEXT, FALLBACK_TEXT, null);
     }
 }
