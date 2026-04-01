@@ -85,6 +85,52 @@ public class WeatherApiService {
     }
 
     /**
+     * WeatherAPI q 파라미터에 도시명/키워드를 직접 넘겨 조회합니다. (예: {@code Seoul})
+     */
+    public WeatherSnapshot fetchRealtimeForQuery(String qRaw) {
+        String apiKey = properties.getApiKey() != null ? properties.getApiKey().trim() : "";
+        if (apiKey == null || apiKey.isBlank()) {
+            log.error("WEATHER_API_KEY 미설정 - memo.weather-api.api-key 또는 WEATHER_API_KEY 환경변수를 확인하세요.");
+            return WeatherSnapshot.empty();
+        }
+        String q = (qRaw == null || qRaw.isBlank()) ? "Seoul" : qRaw.strip();
+        try {
+            URI uri = UriComponentsBuilder.fromUriString(trimTrailingSlash(properties.getBaseUrl()))
+                    .pathSegment("current.json")
+                    .queryParam("key", apiKey)
+                    .queryParam("q", q)
+                    .queryParam("lang", "ko")
+                    .encode(StandardCharsets.UTF_8)
+                    .build()
+                    .toUri();
+            String requestUrlMasked = uri.toString().replace(apiKey, "****");
+            log.info("WeatherAPI 호출 시작(query 직접) - q={}, url={}", q, requestUrlMasked);
+
+            WeatherApiCurrentResponse body = restTemplate.getForObject(uri, WeatherApiCurrentResponse.class);
+            if (body == null || body.getLocation() == null || body.getCurrent() == null) {
+                log.info("WeatherAPI 응답 비어있음/필드 누락 - q={}", q);
+                return WeatherSnapshot.empty();
+            }
+
+            String city = body.getLocation().getName();
+            String conditionText = body.getCurrent().getCondition() != null
+                    ? body.getCurrent().getCondition().getText()
+                    : null;
+            Double tempC = body.getCurrent().getTempC();
+            log.info("WeatherAPI 응답 수신(query 직접) - city={}, condition={}, tempC={}", city, conditionText, tempC);
+
+            if (city == null || city.isBlank()) {
+                log.info("WeatherAPI 응답에 도시명이 없어 스냅샷을 비웁니다 - q={}", q);
+                return WeatherSnapshot.empty();
+            }
+            return new WeatherSnapshot(city, conditionText, tempC);
+        } catch (Exception e) {
+            log.error("WeatherAPI 호출 실패(query 직접) - q={}, reason={}", q, e.getMessage(), e);
+            return WeatherSnapshot.empty();
+        }
+    }
+
+    /**
      * 사설/루프백 IP는 WeatherAPI에 직접 넘기면 실패하는 경우가 많아 {@code auto:ip}로 대체합니다.
      */
     static String toWeatherQuery(String clientIp) {

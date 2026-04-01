@@ -78,6 +78,18 @@ public class Memo {
         return tempC;
     }
 
+    public void setCityName(String cityName) {
+        this.cityName = cityName;
+    }
+
+    public void setWeatherCondition(String weatherCondition) {
+        this.weatherCondition = weatherCondition;
+    }
+
+    public void setTempC(Double tempC) {
+        this.tempC = tempC;
+    }
+
     /** Thymeleaf에서 SpEL 빈({@code @weatherDisplay}) 없이 이모지 표시용 */
     public String getWeatherEmoji() {
         return WeatherDisplayHelper.emojiForConditionStatic(weatherCondition);
@@ -87,5 +99,22 @@ public class Memo {
         return (cityName != null && !cityName.isBlank())
                 || (weatherCondition != null && !weatherCondition.isBlank())
                 || tempC != null;
+    }
+
+    @Override
+    public String toString() {
+        String safeContent = content == null ? "" : content.replaceAll("\\s+", " ").trim();
+        if (safeContent.length() > 80) {
+            safeContent = safeContent.substring(0, 80) + "...";
+        }
+        return "Memo{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", content='" + safeContent + '\'' +
+                ", createdAt=" + createdAt +
+                ", cityName='" + cityName + '\'' +
+                ", weatherCondition='" + weatherCondition + '\'' +
+                ", tempC=" + tempC +
+                '}';
     }
 }
